@@ -92,6 +92,18 @@ This finds Python 3.9+, creates `.venv`, installs dependencies, checks the nativ
 commands, creates `.env` with a random secret (an existing `.env` is kept), and
 creates the storage folders and database. Re-running it is safe.
 
+## Linux installation
+
+For a local install on Ubuntu or Debian:
+
+```sh
+./scripts/setup-linux.sh
+```
+
+It tells you which packages to `apt install` if any are missing, then runs the
+same steps as the macOS script. It does not need root. For a server, see
+[Linux deployment](#linux-deployment-no-docker).
+
 ## Running
 
 ```sh

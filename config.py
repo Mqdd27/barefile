@@ -23,7 +23,7 @@ class Config:
         self.storage_root = os.path.realpath(self.storage_root)
         self.data_dir = os.path.realpath(self.data_dir)
         if not self.secret_key:
-            raise SystemExit("FILEMANAGER_SECRET_KEY is required (run scripts/setup-macos.sh)")
+            raise SystemExit("FILEMANAGER_SECRET_KEY is required (run the setup script in scripts/)")
         if self.storage_root == "/":
             raise SystemExit("FILEMANAGER_STORAGE_ROOT must not be the filesystem root")
         root, data = self.storage_root + "/", self.data_dir + "/"
