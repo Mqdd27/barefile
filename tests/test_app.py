@@ -234,6 +234,25 @@ class ListingTests(Base):
         size = self.client.get("/api/du").get_json()["du"]
         self.assertRegex(size, r"^2\.\d*M$|^2M$")
 
+    def lock_subfolder(self):
+        sh("mkdir", "-p", f"{self.root}/open", f"{self.root}/locked")
+        self.write("open/found.txt", b"x" * 5000)
+        sh("chmod", "000", f"{self.root}/locked")
+        self.addCleanup(sh, "chmod", "755", f"{self.root}/locked")
+
+    def test_du_reports_partial_size_for_unreadable_subfolder(self):
+        self.lock_subfolder()
+        size = self.client.get("/api/du").get_json().get("du", "")
+        self.assertRegex(size, r"^\S+ \(unreadable folders skipped\)$")
+
+    def test_search_survives_unreadable_subfolder(self):
+        self.lock_subfolder()
+        hit = self.client.get("/", query_string={"q": "found"})
+        miss = self.client.get("/", query_string={"q": "no-such-name"})
+        self.assertIn("found.txt", hit.get_data(as_text=True))
+        self.assertEqual(miss.status_code, 200)
+        self.assertIn("No matches", miss.get_data(as_text=True))
+
     def test_search(self):
         sh("mkdir", "-p", f"{self.root}/deep/er")
         sh("touch", f"{self.root}/deep/er/Report 2024.PDF", f"{self.root}/other.txt")

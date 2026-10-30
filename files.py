@@ -155,8 +155,7 @@ class Storage:
         proc = self.cli.run("find", base, *expr, "-exec", self.cli.bins["stat"],
                             *self.cli.stat_args(mark), "{}", "+", check=False,
                             timeout=self.cli.timeout)
-        if proc.returncode and not proc.stdout:
-            raise CommandError("Could not read folder")
+        # Non-zero is normal here: find reports unreadable subfolders and carries on.
         records, skipped = [], 0
         for record in text(proc.stdout).split(mark)[1:]:
             size, mtime, kind, path = record[:-1].split("|", 3)
@@ -191,8 +190,11 @@ class Storage:
         return {"entries": self._sort(records, key, order == "desc"), "total": total, "skipped": skipped}
 
     def du(self, rel):
-        output = self.cli.run("du", "-sh", "--", self.folder(rel)).stdout
-        return text(output).split("\t")[0].strip()
+        proc = self.cli.run("du", "-sh", "--", self.folder(rel), check=False)
+        if not proc.stdout:
+            raise CommandError("Could not measure folder")
+        size = text(proc.stdout).split("\t")[0].strip()
+        return f"{size} (unreadable folders skipped)" if proc.returncode else size
 
     def search(self, query):
         """Case-insensitive filename match. find does not follow symlinks by default."""
