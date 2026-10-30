@@ -138,7 +138,7 @@ Set these in `.env`. See `.env.example`.
 | `FILEMANAGER_STORAGE_ROOT` | `./data/storage` | The folder served. `/` is refused |
 | `FILEMANAGER_DATA_DIR` | `./data/app` | Database, trash, upload temp files |
 | `FILEMANAGER_COOKIE_SECURE` | `0` | Set `1` behind HTTPS |
-| `FILEMANAGER_READ_ONLY` | `0` | Set `1` to refuse every change on the server and hide those controls |
+| `FILEMANAGER_READ_ONLY` | `1` | Refuses every change on the server and hides those controls. Set `0` to allow changes |
 | `FILEMANAGER_CLI_PATH` | `/usr/bin:/bin` | Where native commands are found |
 | `FILEMANAGER_CMD_TIMEOUT` | `30` | Seconds, short commands |
 | `FILEMANAGER_OP_TIMEOUT` | `3600` | Seconds, long commands |
@@ -153,23 +153,20 @@ trash rely on atomic link and rename. The app refuses to start otherwise.
 
 ## Linux deployment (no Docker)
 
-For Ubuntu or Debian, as root once for setup. The app itself runs unprivileged.
+For Ubuntu or Debian. The app runs as your normal login user, so no extra account
+or ownership change is needed.
 
 ```sh
-apt install python3-venv file
-useradd --system --create-home --home-dir /srv/barefile barefile
-git clone git@github.com:Mqdd27/barefile.git /srv/barefile/app
-chown -R barefile: /srv/barefile
-cd /srv/barefile/app
-sudo -u barefile python3 -m venv .venv
-sudo -u barefile .venv/bin/pip install -r requirements.txt
-sudo -u barefile sh -c 'umask 077; cat > .env' <<EOF
-FILEMANAGER_SECRET_KEY=$(python3 -c 'import secrets; print(secrets.token_hex(32))')
-FILEMANAGER_STORAGE_ROOT=/srv/barefile/storage
-FILEMANAGER_DATA_DIR=/srv/barefile/data
-FILEMANAGER_COOKIE_SECURE=1
-EOF
+sudo apt install python3-venv file
+sudo mkdir /opt/barefile
+sudo chown "$USER": /opt/barefile
+git clone git@github.com:Mqdd27/barefile.git /opt/barefile/app
+cd /opt/barefile/app
+./scripts/setup-linux.sh
 ```
+
+Then set `FILEMANAGER_COOKIE_SECURE=1` in `.env`. Files are served from `data/storage`
+unless you change `FILEMANAGER_STORAGE_ROOT`.
 
 `/etc/systemd/system/barefile.service`:
 
@@ -179,10 +176,10 @@ Description=barefile
 After=network.target
 
 [Service]
-User=barefile
-WorkingDirectory=/srv/barefile/app
-EnvironmentFile=/srv/barefile/app/.env
-ExecStart=/srv/barefile/app/.venv/bin/gunicorn 'app:create_app()' --bind 127.0.0.1:5050 --workers 1 --threads 8
+User=your-login-user
+WorkingDirectory=/opt/barefile/app
+EnvironmentFile=/opt/barefile/app/.env
+ExecStart=/opt/barefile/app/.venv/bin/gunicorn 'app:create_app()' --bind 127.0.0.1:5050 --workers 1 --threads 8
 Restart=on-failure
 
 [Install]
@@ -190,7 +187,7 @@ WantedBy=multi-user.target
 ```
 
 ```sh
-systemctl enable --now barefile
+sudo systemctl enable --now barefile
 ```
 
 Put a TLS-terminating reverse proxy in front and register immediately, since the

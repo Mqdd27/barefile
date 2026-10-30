@@ -12,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import unittest.mock
 import uuid
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -569,6 +570,22 @@ class SecurityTests(Base):
     def test_error_pages_hide_internal_paths(self):
         res = self.client.get("/?path=../x")
         self.assertNotIn(self.base, res.get_data(as_text=True))
+
+
+class ReadOnlyDefaultTests(unittest.TestCase):
+    def load(self, **env):
+        base = {"FILEMANAGER_SECRET_KEY": "s"}
+        with unittest.mock.patch.dict(os.environ, {**base, **env}, clear=True):
+            return config.load().read_only
+
+    def test_read_only_unless_turned_off(self):
+        self.assertTrue(self.load())
+        self.assertTrue(self.load(FILEMANAGER_READ_ONLY="1"))
+        self.assertFalse(self.load(FILEMANAGER_READ_ONLY="0"))
+
+    def test_example_env_is_read_only(self):
+        with open(os.path.join(config.BASE, ".env.example")) as f:
+            self.assertIn("\nFILEMANAGER_READ_ONLY=1\n", f.read())
 
 
 class ReadOnlyTests(Base):

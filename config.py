@@ -50,7 +50,7 @@ def load():
         data_dir=env("FILEMANAGER_DATA_DIR", os.path.join(BASE, "data", "app")),
         secret_key=env("FILEMANAGER_SECRET_KEY", ""),
         cookie_secure=env("FILEMANAGER_COOKIE_SECURE", "0") == "1",
-        read_only=env("FILEMANAGER_READ_ONLY", "0") == "1",
+        read_only=env("FILEMANAGER_READ_ONLY", "1") != "0",
         cli_path=env("FILEMANAGER_CLI_PATH", DEFAULT_CLI_PATH),
         cmd_timeout=int(env("FILEMANAGER_CMD_TIMEOUT", "30")),
         op_timeout=int(env("FILEMANAGER_OP_TIMEOUT", "3600")),

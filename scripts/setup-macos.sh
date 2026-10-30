@@ -44,3 +44,4 @@ set -a; . ./.env; set +a
 echo
 echo "Done. Start the app:  ./scripts/dev.sh"
 echo "Then open:            http://127.0.0.1:5050"
+echo "Read-only by default. To allow changes, set FILEMANAGER_READ_ONLY=0 in .env"
