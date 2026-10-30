@@ -11,8 +11,10 @@ from database import execute, query
 MAX_FAILURES = 5
 WINDOW_SECONDS = 300
 PUBLIC = {"login", "register_user", "static"}
+# Werkzeug's default, scrypt, is missing from the LibreSSL-based macOS system Python.
+HASH_METHOD = "pbkdf2:sha256"
 # Checked for unknown usernames too, so response time does not reveal which exist.
-DUMMY_HASH = generate_password_hash(secrets.token_hex(16))
+DUMMY_HASH = generate_password_hash(secrets.token_hex(16), method=HASH_METHOD)
 
 
 def csrf_token():
@@ -89,7 +91,7 @@ def register(app, cfg):
                     cfg.db,
                     "INSERT INTO users (username, password_hash) SELECT ?, ? "
                     "WHERE NOT EXISTS (SELECT 1 FROM users)",
-                    (username, generate_password_hash(password)),
+                    (username, generate_password_hash(password, method=HASH_METHOD)),
                 )
                 if not created:
                     return redirect(url_for("login"))
