@@ -144,6 +144,10 @@ function bindFiles() {
       op('Renaming...', { action: 'rename', items: [button.dataset.rename], name });
     }
   }));
+}
+
+// Also runs in read-only mode, where bindFiles does not.
+function bindListing() {
   $('sort-form').addEventListener('change', e => e.currentTarget.submit());
 
   // du runs on demand so a huge folder never delays the listing.
@@ -176,5 +180,6 @@ if ($('panel')) {
     $('panel-output').textContent = output;
   }
   if ($('add-file')) bindFiles();
+  if ($('du')) bindListing();
   bindTrash();
 }

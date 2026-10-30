@@ -126,6 +126,7 @@ Set these in `.env`. See `.env.example`.
 | `FILEMANAGER_STORAGE_ROOT` | `./data/storage` | The folder served. `/` is refused |
 | `FILEMANAGER_DATA_DIR` | `./data/app` | Database, trash, upload temp files |
 | `FILEMANAGER_COOKIE_SECURE` | `0` | Set `1` behind HTTPS |
+| `FILEMANAGER_READ_ONLY` | `0` | Set `1` to refuse every change on the server and hide those controls |
 | `FILEMANAGER_CLI_PATH` | `/usr/bin:/bin` | Where native commands are found |
 | `FILEMANAGER_CMD_TIMEOUT` | `30` | Seconds, short commands |
 | `FILEMANAGER_OP_TIMEOUT` | `3600` | Seconds, long commands |

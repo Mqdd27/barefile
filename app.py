@@ -53,6 +53,13 @@ def create_app(cfg=None):
                       SESSION_COOKIE_NAME="barefile", SESSION_COOKIE_HTTPONLY=True,
                       SESSION_COOKIE_SAMESITE="Lax", SESSION_COOKIE_SECURE=cfg.cookie_secure)
     auth.register(app, cfg)
+    app.jinja_env.globals["read_only"] = cfg.read_only
+
+    @app.before_request
+    def refuse_changes():
+        # Every change goes through these two endpoints.
+        if cfg.read_only and request.endpoint in ("operation", "upload"):
+            raise FileError("Read-only mode: changes are disabled", 403)
 
     @app.after_request
     def headers(response):

@@ -31,12 +31,15 @@ def sh(*argv):
 
 
 class Base(unittest.TestCase):
+    read_only = False
+
     def setUp(self):
         logging.disable(logging.CRITICAL)
         self.base = os.path.realpath(tempfile.mkdtemp(prefix="barefile-test-"))
         self.addCleanup(sh, "rm", "-rf", self.base)
         self.root = f"{self.base}/storage"
-        self.cfg = config.Config(self.root, f"{self.base}/app", "test-secret", cli_path=CLI_PATH)
+        self.cfg = config.Config(self.root, f"{self.base}/app", "test-secret", cli_path=CLI_PATH,
+                                 read_only=self.read_only)
         self.app = create_app(self.cfg)
         self.client = self.app.test_client()
 
@@ -566,6 +569,49 @@ class SecurityTests(Base):
     def test_error_pages_hide_internal_paths(self):
         res = self.client.get("/?path=../x")
         self.assertNotIn(self.base, res.get_data(as_text=True))
+
+
+class ReadOnlyTests(Base):
+    read_only = True
+
+    def setUp(self):
+        super().setUp()
+        self.signup()
+        sh("mkdir", f"{self.root}/d")
+        self.write("f.txt", b"keep")
+
+    def test_every_change_is_refused(self):
+        for body in ({"action": "add_file", "items": ["n"], "path": ""},
+                     {"action": "add_folder", "items": ["n"], "path": ""},
+                     {"action": "rename", "items": ["f.txt"], "name": "n"},
+                     {"action": "copy", "items": ["f.txt"], "dest": "d"},
+                     {"action": "move", "items": ["f.txt"], "dest": "d"},
+                     {"action": "delete", "items": ["f.txt"]},
+                     {"action": "restore", "items": [1]},
+                     {"action": "purge", "items": [1], "confirm": True},
+                     {"action": "empty", "confirm": True}):
+            res = self.post("/api/op", json=body)
+            self.assertEqual(res.status_code, 403, body)
+        self.assertEqual(self.upload("n", b"x").status_code, 403)
+        self.assertEqual(sorted(self.names_on_disk()), ["d", "f.txt"])
+        self.assertEqual(self.read("f.txt"), b"keep")
+
+    def names_on_disk(self):
+        return sh("ls", "-A", self.root).stdout.decode().split()
+
+    def test_reading_still_works(self):
+        page = self.client.get("/", query_string={"sort": "size"}).get_data(as_text=True)
+        self.assertIn("f.txt", page)
+        self.assertEqual(self.client.get("/download?path=f.txt").get_data(), b"keep")
+        self.assertIn("f.txt", self.client.get("/?q=f.txt").get_data(as_text=True))
+        self.assertTrue(self.client.get("/api/du").get_json()["du"])
+        self.assertEqual(self.client.get("/trash").status_code, 200)
+
+    def test_change_controls_are_hidden(self):
+        page = self.client.get("/").get_data(as_text=True)
+        for control in ('id="add-file"', 'id="delete"', 'class="select"', "data-rename"):
+            self.assertNotIn(control, page)
+        self.assertIn("Read-only", page)
 
 
 class CliTests(Base):

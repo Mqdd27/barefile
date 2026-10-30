@@ -3,7 +3,7 @@
 {% block body %}
 <div class="bar">
   <h2>Recycle Bin</h2>
-  {% if items %}<span><button data-op="empty">Empty Trash</button></span>{% endif %}
+  {% if items and not read_only %}<span><button data-op="empty">Empty Trash</button></span>{% endif %}
 </div>
 <div class="scroll"><table>
   <tr><th>Name</th><th>Original location</th><th>Deleted</th><th></th></tr>
@@ -13,8 +13,10 @@
     <td>/{{ item.original_path }}</td>
     <td>{{ item.deleted_at }}</td>
     <td>
+      {% if not read_only %}
       <button data-op="restore" data-item="{{ item.id }}">Restore</button>
       <button data-op="purge" data-item="{{ item.id }}" data-name="{{ item.original_name }}">Delete permanently</button>
+      {% endif %}
     </td>
   </tr>
   {% else %}

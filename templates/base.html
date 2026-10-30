@@ -13,6 +13,7 @@
 <nav>
   <a href="{{ url_for('index') }}">Files</a>
   <a href="{{ url_for('trash_page') }}">Recycle Bin</a>
+  {% if read_only %}<span>Read-only</span>{% endif %}
   <form method="post" action="{{ url_for('logout') }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <button>Logout</button>

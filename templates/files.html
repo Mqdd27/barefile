@@ -6,6 +6,7 @@
   {% if not q %}<span>Size: <span id="du" data-path="{{ path }}">...</span></span>{% endif %}
 </div>
 
+{% if not read_only %}
 <div class="bar">
   <span>
     <button id="add-file">Add File</button>
@@ -19,6 +20,7 @@
     <button id="delete">Delete</button>
   </span>
 </div>
+{% endif %}
 
 <form class="bar" action="{{ url_for('index') }}">
   <span><input type="search" name="q" value="{{ q }}" placeholder="Find by filename" aria-label="Find by filename"> <button>Search</button></span>
@@ -42,7 +44,7 @@
 {% else %}
 <div class="scroll"><table>
   <tr>
-    <th><input type="checkbox" id="select-all" aria-label="Select all"></th>
+    {% if not read_only %}<th><input type="checkbox" id="select-all" aria-label="Select all"></th>{% endif %}
     <th>Name</th><th>Size</th><th>Last Edit</th>
     <th>
       <form id="sort-form" action="{{ url_for('index') }}">
@@ -59,18 +61,18 @@
   </tr>
   {% for e in entries %}
   <tr>
-    <td><input type="checkbox" class="select" value="{{ e.path }}" aria-label="Select {{ e.name }}"></td>
+    {% if not read_only %}<td><input type="checkbox" class="select" value="{{ e.path }}" aria-label="Select {{ e.name }}"></td>{% endif %}
     <td>{% if e.is_dir %}<a href="{{ url_for('index', path=e.path) }}">{{ e.name }}/</a>
         {% else %}<a href="{{ url_for('preview', path=e.path) }}">{{ e.name }}</a>{% endif %}</td>
     <td>{{ e.size_h }}</td>
     <td>{{ e.date }}</td>
     <td>
-      <button data-rename="{{ e.path }}" data-name="{{ e.name }}">Rename</button>
+      {% if not read_only %}<button data-rename="{{ e.path }}" data-name="{{ e.name }}">Rename</button>{% endif %}
       {% if not e.is_dir %}<a href="{{ url_for('download', path=e.path) }}">Download</a>{% endif %}
     </td>
   </tr>
   {% else %}
-  <tr><td colspan="5">Empty folder. Drop files here to upload.</td></tr>
+  <tr><td colspan="5">Empty folder.{% if not read_only %} Drop files here to upload.{% endif %}</td></tr>
   {% endfor %}
 </table></div>
 <p>Total (ls): {{ total }}<br>Folder disk usage (du, recursive): <span id="du-footer">...</span></p>
