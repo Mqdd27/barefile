@@ -19,6 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config  # noqa: E402
 from app import create_app  # noqa: E402
 from cli import CLI, CommandError  # noqa: E402
+from database import execute  # noqa: E402
 from files import FileError, Storage, parse_ls, validate_name  # noqa: E402
 
 CLI_PATH = os.environ.get("FILEMANAGER_CLI_PATH", config.DEFAULT_CLI_PATH)
@@ -103,6 +104,20 @@ class AuthTests(Base):
         good = self.client.post("/login", data={"username": "ahmad", "password": PASSWORD, "csrf_token": token})
         self.assertEqual(good.status_code, 302)
         self.assertEqual(self.client.get("/").status_code, 200)
+
+    def test_background_requests_keep_the_csrf_token(self):
+        html = self.client.get("/register").get_data(as_text=True)
+        token = re.search(r'name="csrf" content="(\w+)"', html).group(1)
+        for url in ("/favicon.ico", "/apple-touch-icon.png", "/"):  # sent by browsers on their own
+            self.client.get(url)
+        res = self.client.post("/register", data={"username": "a", "password": PASSWORD, "csrf_token": token})
+        self.assertEqual(res.status_code, 302)
+
+    def test_deleted_user_loses_access(self):
+        self.signup()
+        execute(self.cfg.db, "DELETE FROM users")
+        self.assertEqual(self.client.get("/").status_code, 302)
+        self.assertEqual(self.client.get("/trash").status_code, 302)
 
     def test_password_is_hashed(self):
         self.signup()

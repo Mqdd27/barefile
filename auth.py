@@ -49,7 +49,8 @@ def register(app, cfg):
         user_id = session.get("user_id")
         if user_id and query(cfg.db, "SELECT 1 FROM users WHERE id = ?", (user_id,)):
             return None
-        session.clear()
+        # Keep the CSRF token: browsers fetch /favicon.ico here behind an open login form.
+        session.pop("user_id", None)
         if request.path.startswith("/api/"):
             return jsonify(error="Login required"), 401
         return redirect(url_for("login"))
