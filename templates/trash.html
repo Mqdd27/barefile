@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Recycle Bin{% endblock %}
+{% block body %}
+<div class="bar">
+  <h2>Recycle Bin</h2>
+  {% if items %}<span><button data-op="empty">Empty Trash</button></span>{% endif %}
+</div>
+<div class="scroll"><table>
+  <tr><th>Name</th><th>Original location</th><th>Deleted</th><th></th></tr>
+  {% for item in items %}
+  <tr>
+    <td>{{ item.original_name }}</td>
+    <td>/{{ item.original_path }}</td>
+    <td>{{ item.deleted_at }}</td>
+    <td>
+      <button data-op="restore" data-item="{{ item.id }}">Restore</button>
+      <button data-op="purge" data-item="{{ item.id }}" data-name="{{ item.original_name }}">Delete permanently</button>
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="4">Recycle Bin is empty.</td></tr>
+  {% endfor %}
+</table></div>
+{% endblock %}

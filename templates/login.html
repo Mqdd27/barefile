@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block body %}
+<form method="post" class="login">
+  <h2>{{ title }}</h2>
+  {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <label>Username: <input name="username" autocomplete="username" required autofocus></label>
+  <label>Password: <input name="password" type="password" required
+    {% if title == "Register" %}minlength="8" autocomplete="new-password"{% else %}autocomplete="current-password"{% endif %}></label>
+  <button>{{ title }}</button>
+</form>
+{% endblock %}

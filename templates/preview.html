@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}{{ name }}{% endblock %}
+{% block body %}
+<div class="bar">
+  <span><b>{{ name }}</b> <a href="{{ url_for('index', path=parent) }}">Back</a></span>
+  <a href="{{ url_for('download', path=path) }}">Download</a>
+</div>
+{% set raw = url_for('raw', path=path) %}
+{% if kind == "image" %}<img class="preview" src="{{ raw }}" alt="{{ name }}">
+{% elif kind == "video" %}<video class="preview" controls src="{{ raw }}">This video cannot be played here. Use Download.</video>
+<p>If the video does not play, the browser does not support its codec. Use Download.</p>
+{% elif kind == "pdf" %}<iframe class="pdf" src="{{ raw }}" title="{{ name }}"></iframe>
+{% elif kind == "text" %}<pre class="text">{{ content }}</pre>
+{% else %}<p>No preview for this file type. Use Download.</p>{% endif %}
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="bar">
+  <span>Directory: <b>/{{ path }}{% if path %}/{% endif %}</b>
+    {% if path %}<a href="{{ url_for('index', path=parent) }}">Up</a>{% endif %}</span>
+  {% if not q %}<span>Size: <span id="du" data-path="{{ path }}">...</span></span>{% endif %}
+</div>
+
+<div class="bar">
+  <span>
+    <button id="add-file">Add File</button>
+    <button id="upload">Upload File</button>
+    <button id="add-folder">Create Folder</button>
+    <input id="upload-input" type="file" multiple hidden>
+  </span>
+  <span id="selected-actions" hidden>
+    <button id="copy">Copy</button>
+    <button id="move">Move</button>
+    <button id="delete">Delete</button>
+  </span>
+</div>
+
+<form class="bar" action="{{ url_for('index') }}">
+  <span><input type="search" name="q" value="{{ q }}" placeholder="Find by filename" aria-label="Find by filename"> <button>Search</button></span>
+</form>
+
+{% if q %}
+<p>Results for "{{ q }}" in the whole storage. <a href="{{ url_for('index', path=path) }}">Back to folder</a></p>
+<div class="scroll"><table>
+  <tr><th>Name</th><th>Location</th><th>Size</th></tr>
+  {% for e in entries %}
+  <tr>
+    <td>{% if e.is_dir %}<a href="{{ url_for('index', path=e.path) }}">{{ e.name }}/</a>
+        {% else %}<a href="{{ url_for('preview', path=e.path) }}">{{ e.name }}</a>{% endif %}</td>
+    <td><a href="{{ url_for('index', path=e.parent) }}">/{{ e.parent }}</a></td>
+    <td>{{ e.size }} B</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="3">No matches.</td></tr>
+  {% endfor %}
+</table></div>
+{% else %}
+<div class="scroll"><table>
+  <tr>
+    <th><input type="checkbox" id="select-all" aria-label="Select all"></th>
+    <th>Name</th><th>Size</th><th>Last Edit</th>
+    <th>
+      <form id="sort-form" action="{{ url_for('index') }}">
+        <input type="hidden" name="path" value="{{ path }}">
+        <select name="sort" aria-label="Sort by">
+          {% for key in ("name", "size", "date") %}<option value="{{ key }}"{% if sort == key %} selected{% endif %}>{{ key|capitalize }}</option>{% endfor %}
+        </select>
+        <select name="order" aria-label="Sort order">
+          <option value="asc"{% if order == "asc" %} selected{% endif %}>Asc</option>
+          <option value="desc"{% if order == "desc" %} selected{% endif %}>Desc</option>
+        </select>
+      </form>
+    </th>
+  </tr>
+  {% for e in entries %}
+  <tr>
+    <td><input type="checkbox" class="select" value="{{ e.path }}" aria-label="Select {{ e.name }}"></td>
+    <td>{% if e.is_dir %}<a href="{{ url_for('index', path=e.path) }}">{{ e.name }}/</a>
+        {% else %}<a href="{{ url_for('preview', path=e.path) }}">{{ e.name }}</a>{% endif %}</td>
+    <td>{{ e.size_h }}</td>
+    <td>{{ e.date }}</td>
+    <td>
+      <button data-rename="{{ e.path }}" data-name="{{ e.name }}">Rename</button>
+      {% if not e.is_dir %}<a href="{{ url_for('download', path=e.path) }}">Download</a>{% endif %}
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5">Empty folder. Drop files here to upload.</td></tr>
+  {% endfor %}
+</table></div>
+<p>Total (ls): {{ total }}<br>Folder disk usage (du, recursive): <span id="du-footer">...</span></p>
+{% if skipped %}<p>{{ skipped }} item(s) with non-UTF-8 names are not shown.</p>{% endif %}
+{% endif %}
+{% endblock %}
