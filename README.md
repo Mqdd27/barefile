@@ -146,6 +146,18 @@ Set these in `.env`. See `.env.example`.
 
 ## Storage location
 
+To change the folder, run the command below or edit `FILEMANAGER_STORAGE_ROOT` in
+`.env` yourself:
+
+```sh
+./scripts/set-root.sh ~/Movies
+```
+
+It runs the app's startup checks and only changes `.env` if they pass. If this
+folder is the `barefile` service's install, it restarts the service with `sudo`.
+Otherwise restart the app yourself. Recycle Bin items restore relative to the
+current folder, so empty the bin first.
+
 Files live in `FILEMANAGER_STORAGE_ROOT`. The Recycle Bin (`trash/`), upload temp
 files (`tmp/`) and `barefile.db` live in `FILEMANAGER_DATA_DIR`, which must not
 overlap the storage root and must be on the same filesystem, because uploads and

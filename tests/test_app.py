@@ -572,6 +572,49 @@ class SecurityTests(Base):
         self.assertNotIn(self.base, res.get_data(as_text=True))
 
 
+class SetRootTests(unittest.TestCase):
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.base = os.path.realpath(tmp.name)
+        self.app = f"{self.base}/app"
+        sh("mkdir", "-p", f"{self.app}/scripts", f"{self.base}/data", f"{self.base}/old", f"{self.base}/my new")
+        sh("cp", f"{config.BASE}/scripts/set-root.sh", f"{self.app}/scripts/")
+        sh("cp", *[f"{config.BASE}/{name}.py" for name in ("cli", "config", "database", "files")], self.app)
+        sh("ln", "-s", f"{config.BASE}/.venv", f"{self.app}/.venv")
+
+    def run_it(self, env, *args):
+        with open(f"{self.app}/.env", "w") as f:
+            f.write(env)
+        proc = subprocess.run([f"{self.app}/scripts/set-root.sh", *args], cwd=self.base,
+                              capture_output=True, text=True, env={"PATH": os.environ["PATH"]})
+        with open(f"{self.app}/.env") as f:
+            return proc, f.read()
+
+    def env(self, root_line):
+        return f"FILEMANAGER_SECRET_KEY=s\n{root_line}\nFILEMANAGER_DATA_DIR={self.base}/data\n"
+
+    def test_replaces_active_line_and_keeps_the_rest(self):
+        proc, text = self.run_it(self.env(f"FILEMANAGER_STORAGE_ROOT={self.base}/old"), "my new")
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertEqual(text, self.env(f"FILEMANAGER_STORAGE_ROOT='{self.base}/my new'"))
+        sourced = subprocess.run(["bash", "-c", f". {self.app}/.env; echo \"$FILEMANAGER_STORAGE_ROOT\""],
+                                 capture_output=True, text=True).stdout.strip()
+        self.assertEqual(sourced, f"{self.base}/my new")
+
+    def test_fills_in_commented_line(self):
+        proc, text = self.run_it(self.env("#FILEMANAGER_STORAGE_ROOT=./data/storage"), "old")
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertEqual(text, self.env(f"FILEMANAGER_STORAGE_ROOT={self.base}/old"))
+
+    def test_refused_folders_leave_env_untouched(self):
+        start = self.env(f"FILEMANAGER_STORAGE_ROOT={self.base}/old")
+        for folder in (f"{self.base}/missing", "/", self.base):  # base contains the data folder
+            proc, text = self.run_it(start, folder)
+            self.assertNotEqual(proc.returncode, 0, folder)
+            self.assertEqual(text, start)
+
+
 class ReadOnlyDefaultTests(unittest.TestCase):
     def load(self, **env):
         base = {"FILEMANAGER_SECRET_KEY": "s"}
